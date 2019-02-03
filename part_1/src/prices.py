@@ -1,9 +1,18 @@
-from pandas_datareader import data as pdr 
-import fix_yahoo_finance as yf 
-import pandas as pd
+# importing libraries 
+import numpy as np
+from scipy.stats import skew
+import fix_yahoo_finance as yf
+from scipy.stats import kurtosis
+from pandas_datareader import data as pdr
 
-def download_prices_csv(tickers, start_date, end_date, path):
-    yf.pdr_override()
-    for i in range(len(tickers)):
-        tmp_prices = pdr.get_data_yahoo(tickers[i], start = start_date, end = end_date)
-        tmp_prices.to_csv(path + tickers[i] + ".csv", sep=",")
+yf.pdr_override() 
+
+def download_price(ticker, start_date, end_date):
+    return pdr.get_data_yahoo(ticker, start = start_date, end = end_date)
+
+def log_dif(dataframe, column, shift = 1):
+    return np.log(dataframe[column] / dataframe[column].shift(shift))
+
+def dist_moments(x):
+    return np.mean(x), np.std(x), skew(x), kurtosis(x)
+    
