@@ -7,6 +7,7 @@ import scipy.optimize as sco
 from scipy.stats import skew
 from scipy.stats import kurtosis
 import matplotlib.pyplot as plt 
+from scipy.stats import norm
 
 def dist_moments(x):
     return np.mean(x), np.std(x), skew(x), kurtosis(x)
@@ -44,7 +45,7 @@ def annretvol_port_rand(asset_returns, year_days, n_simulations=100, seed=None):
     n_assets = asset_returns.shape[1]
 
     # init array to hold results
-    random_weight_results = np.zeros((3, n_simulations))
+    random_weight_results = np.zeros((4, n_simulations))
     weights_assigned = []
 
     # loop for the number of simulations specified 
@@ -66,12 +67,15 @@ def annretvol_port_rand(asset_returns, year_days, n_simulations=100, seed=None):
         random_weight_results[1,i] = portfolio_volatility 
         # sharpe ratio result risk free rate set to 0
         random_weight_results[2,i] = portfolio_returns / portfolio_volatility 
+        # Var 99%
+        random_weight_results[3,i] = var_cov_var(random_weights, asset_returns, year_days)
+
         # weights assigned
         weights_assigned.append(random_weights)
 
     # convert results to dataframe
     results_df = pd.DataFrame(random_weight_results.T, 
-                            columns=["expected_return", "expected_volatility", "sharpe_ratio"])
+                            columns=["expected_return", "expected_volatility", "sharpe_ratio", "var_99"])
     
     # add weights to the dataframe
     results_df["weights"] = weights_assigned
@@ -128,6 +132,33 @@ def min_volatility_port(asset_returns, year_days):
     returns, volatility = annretvol_port(asset_returns, weights, year_days)     
     return returns, volatility, weights
 
+def min_var_port(asset_returns, year_days, c=2.33):
+    # get total number of assets
+    n_assets = asset_returns.shape[1]
+    
+    # arguments for minimize function
+    args = (asset_returns, year_days, c)
+    constraints = ({'type': 'eq', 'fun': lambda x: np.sum(x) - 1}) # constraints for function
+    bounds = tuple( (0,1) for asset in range(n_assets)) # bounds between 0 and 1
+
+    # optimize var (finding minimum)
+    optimization = sco.minimize(var_cov_var, 
+                                n_assets*[1./n_assets,], 
+                                args=args,
+                                method='SLSQP', 
+                                bounds=bounds, 
+                                constraints=constraints)
+
+    # return results
+    weights = optimization["x"] 
+    returns, volatility = annretvol_port(asset_returns, weights, year_days)   
+    var = var_cov_var(weights, asset_returns, year_days, c)
+    return returns, volatility, var, weights
+
+def var_cov_var(asset_weights, asset_returns, year_days, c=2.33):
+    volatility = annvol_port(asset_weights, asset_returns , year_days) 
+    var = c * volatility
+    return var
 
 def garch_vol(returns, verbose=True):
     garch = arch_model(returns, vol='Garch', p=1, o=0, q=1, dist='Normal')
