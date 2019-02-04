@@ -18,5 +18,5 @@ def df2csv(path, filename, function, *args):
     else:
         print("File already found in path specified: {0}.".format(path_file))
 
-def csv2df(path, filename):
-    return pd.read_csv(path + filename + ".csv")
+def csv2df(path, filename, index_col= None):
+    return pd.read_csv(path + filename + ".csv", index_col=index_col)

@@ -1,5 +1,6 @@
 # prices 
 COL_DATE = "Date"
+COL_CLOSE = "Close"
 COL_ADJ_CLOSE = "Adj Close"
 COL_LOG_RETURN = "Log Returns"
 

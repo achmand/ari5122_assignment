@@ -9,14 +9,36 @@ import matplotlib.pyplot as plt
 def dist_moments(x):
     return np.mean(x), np.std(x), skew(x), kurtosis(x)
 
-def annualized_retvol(first_mom, second_mom, year_days):
-    year_return = first_mom * year_days
-    year_vol = second_mom * np.sqrt(year_days) 
+# def annualized_retvol(first_mom, second_mom, year_days):
+#     year_return = first_mom * year_days
+#     year_vol = second_mom * np.sqrt(year_days) 
+
+#     annualized_return = year_return * 100
+#     annualized_volatility = year_vol * 100
+
+#     return annualized_return, annualized_volatility
+
+def annretvol_asset(asset_return, year_days):
+    mean_returns, returns_std, _, _, = dist_moments(asset_return)
+    year_return = mean_returns * year_days
+    year_volatility = returns_std * np.sqrt(year_days)
 
     annualized_return = year_return * 100
-    annualized_volatility = year_vol * 100
+    annualized_volatility = year_volatility * 100
 
     return annualized_return, annualized_volatility
+
+def annretvol_port(asset_returns, asset_weights, year_days):
+    mean_daily_returns = asset_returns.mean()
+    returns_cov = asset_returns.cov()
+    
+    portfolio_return = np.sum(mean_daily_returns * asset_weights) * year_days
+    portfolio_volatility = np.sqrt(np.dot(asset_weights.T, np.dot(returns_cov, asset_weights))) * np.sqrt(year_days)
+
+    portfolio_return = portfolio_return * 100
+    portfolio_volatility = portfolio_volatility * 100 
+
+    return portfolio_return, portfolio_volatility
 
 def garch_vol(returns, verbose=True):
     garch = arch_model(returns, vol='Garch', p=1, o=0, q=1, dist='Normal')
@@ -45,7 +67,7 @@ def beta_test_ols(x, y, x_label, y_label):
     
     x2 = np.linspace(x.min(), x.max(), 100)
     pred_y = x2 * beta + alpha
-    fig = plt.figure(figsize=(10,7))
+    plt.figure(figsize=(10,7))
     plt.scatter(x, y, alpha=.3)
     plt.xlabel(x_label + " Daily Return")
     plt.ylabel(y_label + " Daily Return")

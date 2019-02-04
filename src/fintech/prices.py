@@ -5,9 +5,9 @@ from pandas_datareader import data as pdr
 
 yf.pdr_override() 
 
-def download_prices(ticker, start_date, end_date):
-    return pdr.get_data_yahoo(ticker, start = start_date, end = end_date)
+def download_prices(ticker, start_date, end_date, interval="1d"):
+    return pdr.get_data_yahoo(ticker, start = start_date, end = end_date, interval=interval)
 
-def log_diff(dataframe, column, shift = 1):
+def log_diff(dataframe, column, shift=1):
     return np.log(dataframe[column] / dataframe[column].shift(shift))
 
