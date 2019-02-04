@@ -1,5 +1,6 @@
 # importing dependencies 
 import numpy as np 
+import pandas as pd
 from arch import arch_model
 from scipy.stats import skew
 from scipy.stats import kurtosis
@@ -8,15 +9,6 @@ import matplotlib.pyplot as plt
 
 def dist_moments(x):
     return np.mean(x), np.std(x), skew(x), kurtosis(x)
-
-# def annualized_retvol(first_mom, second_mom, year_days):
-#     year_return = first_mom * year_days
-#     year_vol = second_mom * np.sqrt(year_days) 
-
-#     annualized_return = year_return * 100
-#     annualized_volatility = year_vol * 100
-
-#     return annualized_return, annualized_volatility
 
 def annretvol_asset(asset_return, year_days):
     mean_returns, returns_std, _, _, = dist_moments(asset_return)
@@ -39,6 +31,50 @@ def annretvol_port(asset_returns, asset_weights, year_days):
     portfolio_volatility = portfolio_volatility * 100 
 
     return portfolio_return, portfolio_volatility
+
+def annretvol_port_rand(asset_returns, year_days, n_simulations=100, seed=None):
+    # seed numpy random
+    np.random.seed(seed)
+
+    # get total number of assets
+    n_assets = asset_returns.shape[1]
+
+    # init array to hold results
+    random_weight_results = np.zeros((3, n_simulations))
+    weights_assigned = []
+
+    # loop for the number of simulations specified 
+    for i in range(n_simulations):
+        # generate random weights
+        random_weights = np.random.random(n_assets)
+        # calibrate to be equal to 1
+        random_weights /= np.sum(random_weights)
+    
+        # calculate portfolio annualized expected return and volatility using random weights 
+        portfolio_returns, portfolio_volatility = annretvol_port(asset_returns=asset_returns,
+                                                                asset_weights=random_weights,
+                                                                year_days=year_days)
+    
+        # set results
+        # expected returns result 
+        random_weight_results[0,i] = portfolio_returns 
+        # expected volatility result
+        random_weight_results[1,i] = portfolio_volatility 
+        # sharpe ratio result risk free rate set to 0
+        random_weight_results[2,i] = portfolio_returns / portfolio_volatility 
+        # weights assigned
+        weights_assigned.append(random_weights)
+
+    # convert results to dataframe
+    results_df = pd.DataFrame(random_weight_results.T, 
+                            columns=["expected_return", "expected_volatility", "sharpe_ratio"])
+    
+    # add weights to the dataframe
+    results_df["weights"] = weights_assigned
+
+    # return results 
+    return results_df
+
 
 def garch_vol(returns, verbose=True):
     garch = arch_model(returns, vol='Garch', p=1, o=0, q=1, dist='Normal')
