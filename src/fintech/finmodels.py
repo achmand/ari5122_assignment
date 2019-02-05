@@ -194,3 +194,66 @@ def beta_test_ols(x, y, x_label, y_label):
     plt.plot(x2, pred_y, "r", alpha = 0.9)
     plt.show()
 
+def binomial_tree(expected_return, expected_volatility, current_price, simulation_time, time_periods, verbose=True):
+    delta_t = simulation_time / time_periods
+    up_factor = np.exp(expected_volatility/100 * np.sqrt(delta_t))
+    down_factor = 1 / up_factor
+    up_prob = (np.exp(expected_return/100 * delta_t) - down_factor) / (up_factor - down_factor)
+    down_prob = 1 - up_prob
+    if verbose:
+        print("Current price: {0}".format(current_price) + 
+             "\nExpected return: {0}%".format(expected_return) +
+             "\nExpected volatility: {0}%".format(expected_volatility) +
+             "\n\nSimulation time: {0}".format(simulation_time) +
+             "\nTime periods: {0}".format(time_periods) +
+             "\nDelt_t: {0}".format(delta_t) +
+             "\nUp-factor: {0}".format(up_factor) +
+             "\nDown-factor: {0}".format(down_factor) + 
+             "\nUp-probability: {0}".format(up_prob) + 
+             "\nDown-probability: {0}".format(down_prob))
+    
+    # columns for data frame 
+    columns = ["s0"]
+    
+    # binomial prices 
+    # initialize array for prices
+    binomial_prices = np.empty((time_periods + 1 , time_periods + 1))
+    binomial_prices[:] = 0
+    
+    # fill binomial prices
+    binomial_prices[0,0] = current_price # set s0 price
+
+    for i in range(time_periods):
+        columns.append("s" + str(i+1))
+        binomial_prices[0, i + 1] = round(binomial_prices[0, i] * up_factor, 2)
+        binomial_prices[1, i + 1] = round(binomial_prices[0, i] * down_factor, 2)
+        for j in range(i):
+            binomial_prices[j + 2, i + 1] = round(binomial_prices[j + 1, i] * down_factor, 2)
+    
+    # binomial prices 
+    # initialize array for prices
+    binomial_probs = np.empty((time_periods + 1 , time_periods + 1))
+    binomial_probs[:] = 0
+    
+    # fill binomial probabilities 
+    binomial_probs[0,0] = 1.0 # set s0 prob
+    for i in range(time_periods):
+        binomial_probs[0, i + 1] = round(binomial_probs[0, i] * up_prob, 4)
+        for j in range(i+1):
+            prev_prob =  (binomial_probs[j + 1, i] * up_prob)
+            binomial_probs[j + 1, i + 1] = round((binomial_probs[j, i] * down_prob) + prev_prob, 4)
+    
+
+    # expected values 
+    expected_values = np.around(np.sum(binomial_prices * binomial_probs, axis = 0), 2)
+    expected_values = np.reshape(expected_values, (-1, 1))
+    
+    # build dataframes 
+    binomial_prices[binomial_prices == 0] = "nan"
+    binomial_prices_df = pd.DataFrame(data=binomial_prices, columns=columns)
+    binomial_probs[binomial_probs == 0] = 'nan'
+    binomial_probs_df = pd.DataFrame(data=binomial_probs, columns=columns)
+    expected_values_df = pd.DataFrame(data=expected_values.T, columns=columns)
+    
+    return binomial_prices_df, binomial_probs_df, expected_values_df
+    
