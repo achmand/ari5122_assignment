@@ -6,5 +6,5 @@ COL_LOG_RETURN = "Log Returns"
 
 # Financial days
 MONTH_20 = 20
-YEAR_252 = 252
 YEAR_250 = 250
+YEAR_252 = 252

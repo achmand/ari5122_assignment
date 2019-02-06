@@ -160,16 +160,6 @@ def var_cov_var(asset_weights, asset_returns, year_days, c=2.33):
     var = c * volatility
     return var
 
-def garch_vol(returns, verbose=True):
-    garch = arch_model(returns, vol='Garch', p=1, o=0, q=1, dist='Normal')
-    result = garch.fit(update_freq=5)
-
-    if verbose:
-        print(result.summary())
-
-    cond_vol = result.conditional_volatility.iloc[-1]
-    return cond_vol 
-
 def beta_test_ols(x, y, x_label, y_label):
     x1 = sm.add_constant(x)
     model = sm.OLS(y, x1)
@@ -256,4 +246,32 @@ def binomial_tree(expected_return, expected_volatility, current_price, simulatio
     expected_values_df = pd.DataFrame(data=expected_values.T, columns=columns)
     
     return binomial_prices_df, binomial_probs_df, expected_values_df
+
+def arch_vol(returns, year_days, update_freq, verbose=True, **kwargs):
+    vol_model = arch_model(returns, kwargs)
+    result = vol_model.fit(update_freq=update_freq)
+    if verbose:
+        print(result.summary())
+        
+    cond_vol = result.conditional_volatility.iloc[-1]
+    annualized_vol = cond_vol * np.sqrt(year_days) * 100
+    return annualized_vol
+
+def brownian_motion(n_increments, seed=None):
+    np.random.seed(seed)                         
+    delta_time = 1.0/n_increments 
+    brownian_increments = np.random.normal(0., 1., int(n_increments)) * np.sqrt(delta_time) 
+    brownian_path = np.cumsum(brownian_increments) 
+    return brownian_path, brownian_increments
+
+def geo_brownian_motion(current_price, expected_return, expected_volatility, brownian_path, n_increments):    
+    time_periods = np.linspace(0.,1.,int(n_increments + 1))
+    stock_prices = []
+    stock_prices.append(current_price)
     
+    for i in range(1,int(n_increments + 1)):
+        drift = (expected_return - 0.5 * expected_volatility ** 2) * time_periods[i]
+        diffusion = expected_volatility * brownian_path[i-1]
+        tmp_price = current_price * np.exp(drift + diffusion)
+        stock_prices.append(tmp_price)
+    return stock_prices, time_periods
