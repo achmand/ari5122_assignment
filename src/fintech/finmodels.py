@@ -156,7 +156,7 @@ def min_var_port(asset_returns, year_days, c=2.33):
     return returns, volatility, var, weights
 
 def var_cov_var(asset_weights, asset_returns, year_days, c=2.33):
-    volatility = annvol_port(asset_weights, asset_returns , year_days) 
+    volatility = annvol_port(asset_weights, asset_returns, year_days) 
     var = c * volatility
     return var
 
