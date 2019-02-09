@@ -8,6 +8,7 @@ from scipy.stats import skew
 from scipy.stats import kurtosis
 import matplotlib.pyplot as plt 
 from scipy.stats import norm
+import fintech.constants as const  
 
 def dist_moments(x):
     return np.mean(x), np.std(x), skew(x), kurtosis(x)
@@ -275,3 +276,6 @@ def geo_brownian_motion(current_price, expected_return, expected_volatility, bro
         tmp_price = current_price * np.exp(drift + diffusion)
         stock_prices.append(tmp_price)
     return stock_prices, time_periods
+
+def rolling_vol(dataframe, window, col=const.COL_LOG_RETURN):
+    return dataframe[col].rolling(window=window).std()
