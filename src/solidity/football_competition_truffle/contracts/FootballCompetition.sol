@@ -180,6 +180,38 @@ contract FootballCompetition is Ownable {
         newCompetition.winnerAnnounced = false;
         newCompetition.teamIds = new uint8[](255);
         newCompetition.totalTeams = 0;
+
+        // add competition
+        competitions[competitionCount] = newCompetition;
+    }
+
+    /* return details about a competition */
+    function getCompetition(uint8 id) public view competitionExist(id) returns (
+        uint8,          // competition id 
+        string memory,  // competition name
+        address,        // organizer 
+        uint,           // pot balance
+        uint256,        // start ts
+        uint256,        // end timestamp
+        bool,           // winner announced 
+        uint8,          // winning team
+        uint8[] memory, // team ids
+        uint8           // total teams
+    ) 
+    {
+        Competition memory tmpCompetition = competitions[id];
+        return(
+            tmpCompetition.id,
+            tmpCompetition.name,
+            tmpCompetition.organizer,
+            tmpCompetition.potBalance,
+            tmpCompetition.startTimestamp,
+            tmpCompetition.winnerTimestamp,
+            tmpCompetition.winnerAnnounced,
+            tmpCompetition.winningTeam,
+            tmpCompetition.teamIds,
+            tmpCompetition.totalTeams
+        );
     }
 
     /* teams to be added in a competition must be entered one by one */
@@ -255,7 +287,13 @@ contract FootballCompetition is Ownable {
     }
 
     /* check winnings for a participant */
-    function checkWinnings(uint8 competitionId) public view competitionExist(competitionId) returns(bool, uint, uint, uint)
+    function checkWinnings(uint8 competitionId) public view competitionExist(competitionId) returns(
+        bool, 
+        uint, 
+        uint, 
+        uint, 
+        uint8
+    )
     {   
         
         // check if participant was actually competing in competition
@@ -267,7 +305,8 @@ contract FootballCompetition is Ownable {
         // get competition
         Competition storage tmpCompetition = competitions[competitionId];
         uint8 winningTeam = tmpCompetition.winningTeam;
-        bool isWinner = tmpCompetition.participants[msg.sender].teamId == winningTeam;
+        uint8 selectedTeam = tmpCompetition.participants[msg.sender].teamId;
+        bool isWinner = selectedTeam == winningTeam;
         uint potBalance = tmpCompetition.potBalance;
         uint totalWinners = tmpCompetition.betsOnTeam[winningTeam];
 
@@ -287,7 +326,8 @@ contract FootballCompetition is Ownable {
             isWinner,       // is the address a winner
             potBalance,     // total in pot
             winnings,       // winnings by address
-            totalWinners    // total winners
+            totalWinners,   // total winners
+            selectedTeam    // the selected team
         );
     }
 }
