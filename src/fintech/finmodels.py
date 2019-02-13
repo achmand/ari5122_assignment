@@ -1,4 +1,4 @@
-# importing dependencies 
+###### importing dependencies ############################################################################
 import numpy as np 
 import pandas as pd
 from arch import arch_model
@@ -10,20 +10,61 @@ import matplotlib.pyplot as plt
 from scipy.stats import norm
 import fintech.constants as const  
 
+###### finance models and functions ######################################################################
 def dist_moments(x):
+    """ Calculate the four distribution moments. 
+
+        Args:
+            x (numpy array): The array used to calculate the distribution moments for. 
+        
+        Returns:
+            numpy array: 1st distribution moment which is the mean of the array.
+            numpy array: 2nd distribution moment which is the standard deviation of the array.
+            numpy array: 3rd distribution moment which is the skew of the array.
+            numpy array: 4th distribution moment which is the kurtosis of the array. 
+    """
     return np.mean(x), np.std(x), skew(x), kurtosis(x)
 
 def annretvol_asset(asset_return, year_days):
+    """ Annualize the returns and volatility for an asset.
+
+        Args:
+            asset_return (numpy array): An array with the returns for an asset. 
+            year_days (int): The number of days to be used as a full year.
+
+        Returns:
+            float: The annualized returns for an asset.  
+            float: The annualized volatility for an asset.  
+    """
+
+    # get 1st moment and 2nd moment
     mean_returns, returns_std, _, _, = dist_moments(asset_return)
+    
+    # annualize returns 
     year_return = mean_returns * year_days
+    
+    # annaulize volatility 
     year_volatility = returns_std * np.sqrt(year_days)
 
+    # convert to percentages
     annualized_return = year_return * 100
     annualized_volatility = year_volatility * 100
-
+    
+    # return results
     return annualized_return, annualized_volatility
 
 def annretvol_port(asset_returns, asset_weights, year_days):
+    """ Calculates the annualized portfolio returns and volatility. 
+
+        Args:
+            asset_returns (pandas dataframe): Dataframe containing the log returns for each asset. 
+            asset_weights (numpy array): An array with the weights set to each asset. 
+            year_days (int): The number of days to be used as a full year.
+
+        Returns:
+            float: The portfolio expected return as a percentage. 
+            float: The portfolio expected volatility as a percentage.  
+    """
     mean_daily_returns = asset_returns.mean()
     returns_cov = asset_returns.cov()
     
@@ -39,16 +80,28 @@ def annvol_port(asset_weights, asset_returns, year_days):
     return annretvol_port(asset_returns, asset_weights, year_days)[1]
 
 def annretvol_port_rand(asset_returns, year_days, n_simulations=100, seed=None):
+    """ Create different portfolio using random weights. 
+
+        Args: 
+            asset_returns (pandas dataframe): Dataframe containing the log returns for each asset. 
+            year_days (int): The number of days to be used as a full year.
+            n_simulations (int): By default set to 100, the number of simulations. 
+            seed (int): A int used to seed the random. 
+
+        Returns:
+            pandas dataframe: Dataframe with the following columns ['expected_return', 'expected_volatility'
+                                                                    'sharpe_ratio', 'var_99', 'weights']
+    """
     # seed numpy random
     np.random.seed(seed)
 
     # get total number of assets
     n_assets = asset_returns.shape[1]
-
+    
     # init array to hold results
     random_weight_results = np.zeros((4, n_simulations))
     weights_assigned = []
-
+    
     # loop for the number of simulations specified 
     for i in range(n_simulations):
         # generate random weights
@@ -68,28 +121,56 @@ def annretvol_port_rand(asset_returns, year_days, n_simulations=100, seed=None):
         random_weight_results[1,i] = portfolio_volatility 
         # sharpe ratio result risk free rate set to 0
         random_weight_results[2,i] = portfolio_returns / portfolio_volatility 
+        
         # Var 99%
         random_weight_results[3,i] = var_cov_var(random_weights, asset_returns, year_days)
-
+        
         # weights assigned
         weights_assigned.append(random_weights)
 
     # convert results to dataframe
     results_df = pd.DataFrame(random_weight_results.T, 
                             columns=["expected_return", "expected_volatility", "sharpe_ratio", "var_99"])
-    
+  
     # add weights to the dataframe
     results_df["weights"] = weights_assigned
-
-    # return results 
+    
+    # returns results
     return results_df
 
 def neg_sharperatio(asset_weights, asset_returns, year_days, risk_free_rate=0):
-    returns, volatility = annretvol_port(asset_returns,asset_weights,year_days)
-    return -(returns-risk_free_rate) / volatility
+    """ Calculates the negative Sharpe Ratio given a set of inputs. 
+
+        Args:
+            asset_weights (numpy array): The weights assigned to each asset.
+            asset_returns (pandas dataframe): Dataframe containing the log returns for each asset. 
+            year_days (int): The number of days to be used as a full year.
+            risk_free_rate (float): The risk free rate by default set to 0. 
+
+        Returns:
+            float: The negative Sharpe Ratio for the given inputs. 
+    """ 
+
+    # get the returns and volatility for the portfolio 
+    returns, volatility = annretvol_port(asset_returns, asset_weights, year_days)
+    
+    # returns the negative Sharpe Ratio 
+    return -((returns-risk_free_rate) / volatility)
 
 def max_sharperatio_port(asset_returns, year_days ,risk_free_rate=0):
-    
+    """ Finds the maximum Sharpe Ratio for the portfolio. 
+
+        Args:
+            asset_returns (pandas dataframe): Dataframe containing the log returns for each asset. 
+            year_days (int): The number of days to be used as a full year.
+            risk_free_rate (float): The risk free rate by default set to 0. 
+
+        Returns: 
+            float: The expected returns for the portfolio with the maximum sharpe ratio. 
+            float: The expected volatility for the portfolio with the maximum sharpe ratio. 
+            float: The sharpe ratio. 
+            numpy array: The weights assigned when finding the max sharpe ratio. 
+    """
     # get total number of assets
     n_assets = asset_returns.shape[1]
 
@@ -134,6 +215,20 @@ def min_volatility_port(asset_returns, year_days):
     return returns, volatility, weights
 
 def min_var_port(asset_returns, year_days, c=2.33):
+    """ Finds the portfolio with the minimum VaR. 
+
+        Args:
+            asset_returns (pandas dataframe): Dataframe containing the log returns for each asset. 
+            year_days (int): The number of days to be used as a full year.
+            c (float): Confidence level for VaR by default set to 2.33 which is 99%. 
+
+        Returns: 
+            float: The expected returns for the portfolio with the maximum sharpe ratio. 
+            float: The expected volatility for the portfolio with the maximum sharpe ratio. 
+            float: The VaR for the portfolio. 
+            numpy array: The weights assigned when finding lowest VaR. 
+
+    """
     # get total number of assets
     n_assets = asset_returns.shape[1]
     
@@ -153,15 +248,39 @@ def min_var_port(asset_returns, year_days, c=2.33):
     # return results
     weights = optimization["x"] 
     returns, volatility = annretvol_port(asset_returns, weights, year_days)   
+    # gets the var for the specified inputs 
     var = var_cov_var(weights, asset_returns, year_days, c)
     return returns, volatility, var, weights
 
 def var_cov_var(asset_weights, asset_returns, year_days, c=2.33):
+    """ Calculate the VaR for a portfolio using the covariance variance approach given a set of inputs. 
+
+        Args:
+            asset_weights (numpy array): The weights assigned to each asset.
+            asset_returns (pandas dataframe): Dataframe containing the log returns for each asset. 
+            year_days (int): The number of days to be used as a full year.
+            c (float): Confidence level for VaR by default set to 2.33 which is 99%. 
+
+        Returns:
+            float: The computed VaR for the specified confidence level. 
+    """
+    # returns the volatility for the given inputs 
     volatility = annvol_port(asset_weights, asset_returns, year_days) 
+    # calculates VaR
     var = c * volatility
+    # returns result
     return var
 
 def beta_test_ols(x, y, x_label, y_label):
+    """ Performs a beta-test using OLS for two assets. 
+
+        Args:
+            x (numpy array): Percentage changes for the first asset. 
+            y (numpy array): Percentage changes for the second asset. 
+            x_label(str): x-axis label for the plot. 
+            y_label(str): y-axis label for the plot. 
+    """
+    
     x1 = sm.add_constant(x)
     model = sm.OLS(y, x1)
     results = model.fit()
@@ -186,6 +305,22 @@ def beta_test_ols(x, y, x_label, y_label):
     plt.show()
 
 def binomial_tree(expected_return, expected_volatility, current_price, simulation_time, time_periods, verbose=True):
+    """ Constructs a binomial tree given the specified inputs 
+
+        Args:
+            expected_return (float): The expected return for the asset. 
+            expected_volatility (float): The expected volatility for the asset. 
+            current_price (float): The current price for the asset. 
+            simulation_time (float): The simulation time, 1 = 1yr, 0.5 = 1/2yr and so on. 
+            time_periods (int): The number of time periods used to project the prices and probability. 
+            verbose (bool): If set to True outputs values during the operation, False will ignore this. By Default set to True. 
+
+        Returns:
+            dataframe: Dataframe with the projected prices binomial trees. 
+            dataframe: Dataframe with the projected probability binomial trees.
+            dataframe: Dataframe with the expected stock prices on the time periods specified.  
+    """
+
     delta_t = simulation_time / time_periods
     up_factor = np.exp(expected_volatility/100 * np.sqrt(delta_t))
     down_factor = 1 / up_factor
@@ -233,8 +368,8 @@ def binomial_tree(expected_return, expected_volatility, current_price, simulatio
         for j in range(i+1):
             prev_prob =  (binomial_probs[j + 1, i] * up_prob)
             binomial_probs[j + 1, i + 1] = round((binomial_probs[j, i] * down_prob) + prev_prob, 4)
-    
 
+            
     # expected values 
     expected_values = np.around(np.sum(binomial_prices * binomial_probs, axis = 0), 2)
     expected_values = np.reshape(expected_values, (-1, 1))
@@ -259,13 +394,42 @@ def arch_vol(returns, year_days, update_freq, verbose=True, **kwargs):
     return annualized_vol
 
 def brownian_motion(n_increments, seed=None):
-    np.random.seed(seed)                         
-    delta_time = 1.0/n_increments 
+    """ Creates a brownian path from the increments specified. 
+
+        Args:
+            n_increments (int): The time increment. 
+            seed (int): A int used to seed the random. 
+
+        Returns:
+            numpy array: The brownian path which is the cumulative sum of the brownian increments. 
+            numpy array: The brownian increments used in the brownian path. 
+    """
+
+    # seed random if passed
+    np.random.seed(seed)           
+    # get the time step  
+    delta_time = 1.0/n_increments  
+    # brownian increments
     brownian_increments = np.random.normal(0., 1., int(n_increments)) * np.sqrt(delta_time) 
+    # get the brownian path (cumsum of increments)
     brownian_path = np.cumsum(brownian_increments) 
+    # return values 
     return brownian_path, brownian_increments
 
 def geo_brownian_motion(current_price, expected_return, expected_volatility, brownian_path, n_increments):    
+    """ Simulate prices using geometric brownian motion. 
+
+        Args:
+            current_price (float): The price to start simulating from (t = 0). 
+            expected_return (float): The expected return for the asset. 
+            expected_volatility (float): The expected volatility for the asset. 
+            brownian_path (numpy array): The brownian path. 
+            n_increment (int) The number of increments to simulate. 
+        
+        Returns:
+            numpy array: The simulated prices over the n_increments. 
+            numpy array: The time periods (T0 ... TN). 
+    """
     time_periods = np.linspace(0.,1.,int(n_increments + 1))
     stock_prices = []
     stock_prices.append(current_price)
@@ -278,4 +442,16 @@ def geo_brownian_motion(current_price, expected_return, expected_volatility, bro
     return stock_prices, time_periods
 
 def rolling_vol(dataframe, window, col=const.COL_LOG_RETURN):
+    """ Calculating the rolling volatility for a dataframe. 
+
+        Agrs:
+            dataframe (pandas dataframe): The pandas dataframe which has the column used to calculate the volatility.
+            window (int): The window used to calculate the rolling volatility. 
+            col (str): The column name which will be utilised to calculate the rolling volatility (std).
+
+        Returns:
+            pandas series: A series with the rolling volatility. 
+    """
     return dataframe[col].rolling(window=window).std()
+
+##########################################################################################################
