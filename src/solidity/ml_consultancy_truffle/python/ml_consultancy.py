@@ -246,7 +246,6 @@ class Service:
 
         return model_list
 
-
     def get_details_chain(self):
         """ Returns the details of the model weights available on the chain.
 
