@@ -1,0 +1,25 @@
+\documentclass[a4paper,12pt]{report}
+\usepackage{graphicx}
+\usepackage[a4paper,left=2.5cm,right=2cm,top=2.5cm,bottom=2.5cm]{geometry}
+\usepackage{float}
+\usepackage[utf8]{inputenc}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{etoolbox}
+
+% set spacing
+\setlength{\parindent}{1em}
+\setlength{\parskip}{1em}
+% set line spacing to single line space
+\renewcommand{\baselinestretch}{1.0}
+
+\pretocmd{\section}{%
+  \ifnum\value{section}=0 \else\clearpage\fi
+}{}{}
+
+\begin{document}
+\input{sections/0_page_title.tex}
+\input{sections/1_part.tex}
+\input{sections/2_part.tex}
+\input{sections/3_references}
+\end{document}

@@ -1,0 +1,35 @@
+% Question  ##################################################################################################################
+\section{Question 1}\label{ssec:pt2q1}
+\textbf{Consider an investment portfolio consisting of \$100K in Aluminium and \$400K in Zinc. The daily
+volatility of Aluminium is 0.70\% and for Zinc is 0.20\%. The correlation coefficient between them is
+0.70.}
+% END Question  ##############################################################################################################
+
+% Question (i) ###############################################################################################################
+
+\subsection{Q1 (i)}\label{sssec:pt2q1i}
+\textbf{Calculate the 15-day, 99\% Value at Risk (VaR) of the portfolio.}
+
+\noindent
+Code to calculate the 15-day, 99\% Value at Risk (VaR) of the portfolio for this question can be found in ‘Question 1 (i)’ in the python notebook.   
+
+\noindent
+The 15-day VaR(99\%) for the portfolio is \$12,484.54 with a portfolio volatility of \$5,358.17.
+
+% END Question (i) ###########################################################################################################
+
+% Question (ii) ##############################################################################################################
+
+\subsection{Q1 (ii)}\label{sssec:pt2q1ii}
+\textbf{Comment on the impact of diversification on the portfolio VaR (what would be the VaR if the total \$500K is invested in only Aluminium and Zinc?).}
+
+\noindent
+After answering question (i) the VaR(99\%) was calculated as if the full \$500K was to be invested in Aluminium only. The 15-day VaR(99\%) for this asset would be $(2.33 \times 0.007 \times \sqrt{15} \times 500K)$ which is equal to \$31,584.18. On the other hand, if the \$500K was invested in Zinc only the 15-day VaR(99\%) would be $(2.33 \times 0.002 \times \sqrt{15} \times 500K)$ which is equal to \$9024.05.
+
+\noindent
+With a a correlation of 0.70 between Aluminium and Zinc, both assets are likely to move in the same direction which means if one increases or decreases in price the other is likely to do so, since they are positively correlated. This correlation alone already indicates that the diversification in this portfolio is not ideal, since the reason of diversification is to invest in non-correlated assets. In fact although the VaR(99\%) of the portfolio (\$12,484.54) is less than the VaR(99\%) when investing in Aluminium only (\$31,584.18), it is still higher than the VaR(99\%) when investing in Zinc only (\$9024.05). 
+
+\noindent
+So this indicates that using diversification in this case in not beneficial since the reason for diversification is to decrease risk. If both assets were less correlated, say with a 0.1 correlation the diversification for this portfolio would be beneficial as the VaR(99\%) for the portfolio would be \$7,877.33 but in this specific case both assets have a high positive correlation of 0.70 which makes diversification not beneficial. 
+
+% END Question (ii) ##########################################################################################################
