@@ -1,1 +1,1 @@
-# ari5122_assignment
+# Financial Engineering Assignment (ARI5122)
